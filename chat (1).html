@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Tutor - Chat</title>
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .navbar {
+            background-color: #111;
+            padding: 10px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+            padding: 5px 0;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            width: 100%;
+            height: 2px;
+            background-color: #fff;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            transform: scaleX(1);
+        }
+
+        .nav-links a:hover {
+            color: #aaa;
+        }
+
+        /* Sidebar (History) */
+        .sidebar {
+            width: 250px;
+            background-color: #111;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #333;
+        }
+
+        .history-item {
+            padding: 12px;
+            background-color: #222;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            color: #ddd;
+            font-size: 14px;
+        }
+
+        .history-item:hover {
+            background-color: #333;
+        }
+
+        /* Chat Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            background-color: #222;
+            color: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            max-width: 90%;
+            word-wrap: break-word;
+            animation: fade-in 0.3s ease;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #444;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: #222;
+            white-space: pre-wrap;
+        }
+
+        /* Code Block Styling */
+        .code-block {
+            background-color: #1e1e1e;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+            margin-top: 8px;
+            font-family: "Courier New", Courier, monospace;
+            border: 1px solid #333;
+            position: relative;
+        }
+
+        /* Copy Button */
+        .copy-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background-color: #666;
+        }
+
+        /* Input Section */
+        .input-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            padding-top: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border-radius: 30px;
+            border: 1px solid #555;
+            background-color: #111;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+
+        button {
+            background-color: #444;
+            color: #fff;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="navbar">
+            <div class="brand">Ai Tutor</div>
+            <nav class="nav-links">
+                <a href="#">Help</a>
+                <a href="#">API</a>
+                <a href="#">Models</a>
+                <a href="#">Sign Up</a>
+            </nav>
+        </div>
+    </header>
+    <!-- Sidebar for History -->
+    <div class="sidebar" id="sidebar">
+        <h3 style="color: #fff; margin-bottom: 20px;">History</h3>
+    </div>
+
+    <!-- Main Chat Container -->
+    <div class="main-container">
+        <div class="chat-container" id="chat-container"></div>
+
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Type a message..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const responses = {
+            "who made you": "I was created by a group of students from Apex University, Jaipur. My main developer is Lalit Tak, and my co-developers are Aqkib Shaeed and Hemant Tak",
+            "difference between data science and data analytics": "Data science and data analytics are closely related fields, but they have distinct focuses, goals, and methods. Data science is a broader and more technical field that involves the entire process of working with data, from collecting, cleaning, and processing data to building complex models and algorithms that can predict future trends and automate decision-making. It uses techniques such as machine learning, artificial intelligence, deep learning, and data mining to uncover hidden patterns and insights that may not be immediately obvious. Data scientists work with large datasets (often referred to as big data) and use programming languages like Python and R, along with frameworks like TensorFlow, PyTorch, Hadoop, and Spark. Their goal is to create predictive models and intelligent systems that can improve over time and make decisions without human intervention. On the other hand, data analytics is more focused on examining and interpreting existing data to identify patterns, trends, and insights that can support business decisions. Data analysts typically work with structured data, using statistical analysis, data visualization, and business intelligence tools such as Excel, Tableau, Power BI, and SQL to create reports and dashboards. The goal of data analytics is to answer specific business questions, such as identifying customer behavior trends or measuring the success of a marketing campaign. While data science aims to predict the future and solve complex problems using advanced algorithms, data analytics is more about understanding the past and present to guide immediate decision-making. In summary, data science is more technical and future-focused, whereas data analytics is more business-oriented and descriptive, helping companies make informed decisions based on historical data.",
+            "hello": "Hello! How can I help you today?",
+            "what is your purpose" : " My purpose is to generate code and help college and school students grow in their developer journey",
+            "write a code to check if a number is prime in java": `\`\`\`java
+public class Main {
+    public static void main(String[] args) {
+        int num = 29;
+        boolean isPrime = true;
+
+        for (int i = 2; i <= Math.sqrt(num); i++) {
+            if (num % i == 0) {
+                isPrime = false;
+                break;
+            }
+        }
+
+        if (isPrime)
+            System.out.println(num + " is a prime number");
+        else
+            System.out.println(num + " is not a prime number");
+    }
+}
+\`\`\``,
+            "write a python function to reverse a string": `\`\`\`python
+def reverse_string(s):
+    return s[::-1]
+
+result = reverse_string("hello")
+print(result)
+\`\`\``,
+            "how to create a class in c++": `\`\`\`cpp
+class MyClass {
+public:
+    void display() {
+        cout << "Hello World!";
+    }
+};
+\`\`\``,
+            // New 20 Questions
+            "write a python program to find factorial of a number": `\`\`\`python
+def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n-1)
+
+num = 5
+print(factorial(num))
+\`\`\``,
+            "write a c program to check palindrome": `\`\`\`c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    char str[100], rev[100];
+    printf("Enter a string: ");
+    gets(str);
+    strcpy(rev, str);
+    strrev(rev);
+
+    if (strcmp(str, rev) == 0)
+        printf("Palindrome");
+    else
+        printf("Not a palindrome");
+
+    return 0;
+}
+\`\`\``,
+            "write a javascript function to calculate fibonacci series": `\`\`\`javascript
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(10));
+\`\`\``,
+            "write a python function to find gcd of two numbers": `\`\`\`python
+import math
+
+a = 60
+b = 48
+print(math.gcd(a, b))
+\`\`\``,
+            "write a c++ program to swap two numbers without using third variable": `\`\`\`cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int a = 5, b = 10;
+    a = a + b;
+    b = a - b;
+    a = a - b;
+
+    cout << "a = " << a << ", b = " << b;
+    return 0;
+}
+\`\`\``,
+            "write a java program to check armstrong number": `\`\`\`java
+public class ArmstrongNumber {
+    public static void main(String[] args) {
+        int num = 153, originalNum, remainder, result = 0;
+        originalNum = num;
+
+        while (originalNum != 0) {
+            remainder = originalNum % 10;
+            result += Math.pow(remainder, 3);
+            originalNum /= 10;
+        }
+
+        if (result == num)
+            System.out.println(num + " is an Armstrong number");
+        else
+            System.out.println(num + " is not an Armstrong number");
+    }
+}
+\`\`\``,
+            "write a python program to convert celsius to fahrenheit": `\`\`\`python
+celsius = 37
+fahrenheit = (celsius * 9/5) + 32
+print(fahrenheit)
+\`\`\``,
+            "write a c program to find the largest element in an array": `\`\`\`c
+#include <stdio.h>
+
+int main() {
+    int arr[] = {10, 20, 30, 40, 50};
+    int max = arr[0];
+
+    for (int i = 1; i < 5; i++) {
+        if (arr[i] > max)
+            max = arr[i];
+    }
+
+    printf("Largest element = %d", max);
+    return 0;
+}
+\`\`\``,
+            "write a javascript program to check prime number": `\`\`\`javascript
+function isPrime(num) {
+    if (num <= 1) return false;
+    for (let i = 2; i < num; i++) {
+        if (num % i === 0) return false;
+    }
+    return true;
+}
+
+console.log(isPrime(7));
+\`\`\``,
+            "write a python program to count vowels in a string": `\`\`\`python
+def count_vowels(s):
+    return sum(1 for char in s if char.lower() in 'aeiou')
+
+print(count_vowels("hello world"))
+\`\`\``,
+            "write a java program to find sum of digits of a number": `\`\`\`java
+public class SumOfDigits {
+    public static void main(String[] args) {
+        int num = 1234;
+        int sum = 0;
+
+        while (num != 0) {
+            sum += num % 10;
+            num /= 10;
+        }
+
+        System.out.println("Sum of digits: " + sum);
+    }
+}
+\`\`\``,
+            "write a c++ program to reverse an array": `\`\`\`cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int arr[] = {1, 2, 3, 4, 5};
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    for (int i = n - 1; i >= 0; i--)
+        cout << arr[i] << " ";
+
+    return 0;
+}
+\`\`\``,
+            "write a python program to find square root of a number": `\`\`\`python
+import math
+
+num = 16
+print(math.sqrt(num))
+\`\`\``,
+            "write a java program to find lcm of two numbers": `\`\`\`java
+public class LCM {
+    public static void main(String[] args) {
+        int a = 72, b = 120;
+        int lcm = (a * b) / gcd(a, b);
+        System.out.println("LCM = " + lcm);
+    }
+
+    static int gcd(int a, int b) {
+        if (b == 0) return a;
+        return gcd(b, a % b);
+    }
+}
+\`\`\``,
+            "write a javascript function to check palindrome": `\`\`\`javascript
+function isPalindrome(str) {
+    return str === str.split('').reverse().join('');
+}
+
+console.log(isPalindrome("racecar"));
+\`\`\``,
+            "write a python program to calculate power of a number": `\`\`\`python
+base = 2
+exp = 3
+result = pow(base, exp)
+print(result)
+\`\`\``,
+            "write a c++ program to find sum of elements in an array": `\`\`\`cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int arr[] = {1, 2, 3, 4, 5};
+    int sum = 0;
+
+    for (int i = 0; i < 5; i++) {
+        sum += arr[i];
+    }
+
+    cout << "Sum = " << sum;
+    return 0;
+}
+\`\`\``,
+            "write a python program to check even or odd": `\`\`\`python
+num = 5
+if num % 2 == 0:
+    print("Even")
+else:
+    print("Odd")
+\`\`\``,
+"python program to check if a number is even or odd": `\`\`\`python
+num = 4
+if num % 2 == 0:
+    print("Even")
+else:
+    print("Odd")
+\`\`\``,
+
+    "python program to check if a year is leap year": `\`\`\`python
+year = 2024
+if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
+    print("Leap Year")
+else:
+    print("Not a Leap Year")
+\`\`\``,
+
+    "python program to find the largest among three numbers": `\`\`\`python
+a, b, c = 10, 20, 15
+largest = max(a, b, c)
+print("Largest:", largest)
+\`\`\``,
+
+    "python program to check if a number is positive negative or zero": `\`\`\`python
+num = -5
+if num > 0:
+    print("Positive")
+elif num < 0:
+    print("Negative")
+else:
+    print("Zero")
+\`\`\``,
+
+    "python program to find factorial using recursion": `\`\`\`python
+def factorial(n):
+    if n == 0:
+        return 1
+    return n * factorial(n - 1)
+
+print(factorial(5))
+\`\`\``,
+
+    "python program to find the length of a string": `\`\`\`python
+s = "hello"
+print("Length:", len(s))
+\`\`\``,
+
+    "python program to count the number of digits in a number": `\`\`\`python
+num = 12345
+print("Digits:", len(str(num)))
+\`\`\``,
+
+    "python program to reverse a number": `\`\`\`python
+num = 1234
+reverse = int(str(num)[::-1])
+print("Reversed:", reverse)
+\`\`\``,
+
+    "python program to calculate sum of digits of a number": `\`\`\`python
+num = 1234
+total = sum(int(d) for d in str(num))
+print("Sum:", total)
+\`\`\``,
+
+    "python program to find all prime numbers in a range": `\`\`\`python
+for num in range(10, 50):
+    if all(num % i != 0 for i in range(2, int(num**0.5)+1)) and num > 1:
+        print(num, end=" ")
+\`\`\``,
+
+    "python program to check if a string is a palindrome": `\`\`\`python
+s = "madam"
+print("Palindrome" if s == s[::-1] else "Not a palindrome")
+\`\`\``,
+
+    "python program to generate multiplication table": `\`\`\`python
+num = 5
+for i in range(1, 11):
+    print(f"{num} x {i} = {num*i}")
+\`\`\``,
+
+    "python program to print fibonacci series": `\`\`\`python
+a, b = 0, 1
+for _ in range(10):
+    print(a, end=" ")
+    a, b = b, a + b
+\`\`\``,
+
+    "python program to check if a number is armstrong": `\`\`\`python
+num = 153
+digits = len(str(num))
+sum_pow = sum(int(d)**digits for d in str(num))
+print("Armstrong" if sum_pow == num else "Not Armstrong")
+\`\`\``,
+
+    "python program to check if a number is perfect": `\`\`\`python
+num = 28
+sum_div = sum(i for i in range(1, num) if num % i == 0)
+print("Perfect Number" if sum_div == num else "Not Perfect")
+\`\`\``,
+
+    "python program to swap two numbers": `\`\`\`python
+a, b = 5, 10
+a, b = b, a
+print("a =", a, "b =", b)
+\`\`\``,
+
+    "python program to print ascii value of character": `\`\`\`python
+char = 'A'
+print("ASCII value:", ord(char))
+\`\`\``,
+
+    "python program to find gcd of two numbers": `\`\`\`python
+import math
+a, b = 54, 24
+print("GCD:", math.gcd(a, b))
+\`\`\``,
+
+    "python program to find lcm of two numbers": `\`\`\`python
+import math
+a, b = 12, 15
+lcm = abs(a*b) // math.gcd(a, b)
+print("LCM:", lcm)
+\`\`\``,
+
+    "python program to find square root of number": `\`\`\`python
+import math
+num = 25
+print("Square root:", math.sqrt(num))
+\`\`\``,
+
+    "python program to find power of number": `\`\`\`python
+base = 2
+exp = 3
+print("Power:", pow(base, exp))
+\`\`\``,
+
+    "python program to convert binary to decimal": `\`\`\`python
+binary = "1010"
+decimal = int(binary, 2)
+print("Decimal:", decimal)
+\`\`\``,
+
+    "python program to convert decimal to binary": `\`\`\`python
+decimal = 10
+print("Binary:", bin(decimal)[2:])
+\`\`\``,
+
+    "python program to find second largest number in list": `\`\`\`python
+lst = [1, 3, 4, 5, 0, 2]
+lst = list(set(lst))
+lst.sort()
+print("Second largest:", lst[-2])
+\`\`\``,
+
+    "python program to find sum of elements in list": `\`\`\`python
+lst = [1, 2, 3, 4, 5]
+print("Sum:", sum(lst))
+\`\`\``,
+
+"write a code to add to number in python": `\`\`\`python
+# Add two numbers
+a = 10
+b = 5
+sum = a + b
+
+print("The sum is:", sum)
+\`\`\``,
+
+        };
+        function sendMessage() {
+            const userInput = document.getElementById('userInput').value.trim();
+            if (userInput) {
+                addMessage(userInput, 'user-message');
+                addToHistory(userInput);
+                document.getElementById('userInput').value = '';
+
+                setTimeout(() => {
+                    const aiResponse = responses[userInput.toLowerCase()] || "I'm not sure about that. Can you ask something else?";
+                    simulateTyping(aiResponse);
+                }, 500);
+            }
+        }
+
+        function addMessage(text, className) {
+            const chatContainer = document.getElementById('chat-container');
+            const message = document.createElement('div');
+            message.classList.add('message', className);
+            message.innerText = text;
+            chatContainer.appendChild(message);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addToHistory(question) {
+            const sidebar = document.getElementById('sidebar');
+            const historyItem = document.createElement('div');
+            historyItem.classList.add('history-item');
+            historyItem.innerText = question;
+            sidebar.appendChild(historyItem);
+            historyItem.onclick = () => simulateTyping(responses[question.toLowerCase()] || "I'm not sure about that.");
+        }
+
+        document.getElementById("userInput").addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+        function simulateTyping(text) {
+            const container = document.getElementById('chat-container');
+            const botMessage = document.createElement('div');
+            botMessage.classList.add('bot-message', 'message');
+
+            // Check if it's code
+            const codeMatch = text.match(/```(\w+)\n([\s\S]*?)```/);
+            if (codeMatch) {
+                const language = codeMatch[1];
+                const codeContent = codeMatch[2];
+
+                const codeBlock = document.createElement('pre');
+                const code = document.createElement('code');
+                code.className = `language-${language}`;
+                code.textContent = codeContent;
+                codeBlock.appendChild(code);
+                botMessage.appendChild(codeBlock);
+
+                setTimeout(() => {
+                    hljs.highlightElement(code);
+                }, 10);
+            } else {
+                let i = 0;
+                function type() {
+                    if (i < text.length) {
+                        botMessage.innerText += text.charAt(i);
+                        i++;
+                        setTimeout(type, 20);
+                    }
+                }
+                type();
+            }
+
+            container.appendChild(botMessage);
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body>
+</html>
